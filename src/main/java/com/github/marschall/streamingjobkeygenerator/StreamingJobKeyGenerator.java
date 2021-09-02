@@ -55,29 +55,19 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
           hasher.put(';');
         }
       }
-      byte[] md5 = hasher.digest();
-      return hexEncode(md5);
+      return hasher.digest();
     } catch (IOException | DigestException e) {
       throw new IllegalStateException("Failed to compute MD-5 hash", e);
     }
 
   }
 
-  private static String hexEncode(byte[] md5) {
-    byte[] hex = new byte[32];
-    for (int i = 0; i < md5.length; i++) {
-      byte b = md5[i];
-      hex[i * 2] = (byte) Character.forDigit((b >>> 4) & 0xF, 16);
-      hex[i * 2 + 1] = (byte) Character.forDigit(b & 0xF, 16);
-
-    }
-    return new String(hex, ISO_8859_1); // Strictly speaking US-ASCII but vectorized fast path is only available on JDK 17+
-  }
-
   /**
    * Performs incremental UTF-8 encoding and MD5 hashing.
    */
   static final class IncrementalHasher {
+    
+    private static final int MD5_LENGTH = 16;
 
     private final CharBuffer charBuffer;
 
@@ -157,9 +147,31 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
       this.encodeAndHash(true);
     }
 
-    byte[] digest() throws DigestException, IOException {
+    String digest() throws DigestException, IOException {
       this.finish();
-      return this.messageDigest.digest();
+      // we no longer the byte[] of #byteBuffer
+      // it has length 64
+      // store the MD5 hash in the first 16 bytes
+      // store the hex ASCII string in the next 32 bytes
+      int digestLength = this.messageDigest.digest(this.byteBuffer.array(), 0, MD5_LENGTH);
+      if (digestLength != MD5_LENGTH) {
+        throw new DigestException("unexpected hash length");
+      }
+      return hexEncode();
+    }
+
+    private String hexEncode() {
+      byte[] array = this.byteBuffer.array();
+      // MD5 hash is in the first 16 bytes 
+      for (int i = 0; i < MD5_LENGTH; i++) {
+        byte b = array[i];
+        array[MD5_LENGTH + (i * 2)] = (byte) Character.forDigit((b >>> 4) & 0xF, 16);
+        array[MD5_LENGTH + (i * 2 + 1)] = (byte) Character.forDigit(b & 0xF, 16);
+
+      }
+      // use the next 32 bytes as a work buffer for the hex ASCII string
+      // Strictly speaking US-ASCII but vectorized fast path is only available on JDK 17+
+      return new String(array, MD5_LENGTH, MD5_LENGTH * 2, ISO_8859_1);
     }
 
   }
