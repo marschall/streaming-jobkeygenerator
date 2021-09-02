@@ -7,8 +7,8 @@
   <version>0.1.0-SNAPSHOT</version>
   <inceptionYear>2021</inceptionYear>
   <url>https://github.com/marschall/streaming-jobkeygenerator</url>
-  <name>Spring Batch In-Memory</name>
-  <description>In-Memory implementations of some Spring Batch interfaces</description>
+  <name>StreamingJobKeyGenerator</name>
+  <description>A faster replacement for DefaultJobKeyGenerator</description>
 
   <developers>
     <developer>
@@ -126,13 +126,13 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <release>11</release>
+          <release>8</release>
         </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <release>11</release>
+          <release>8</release>
           <links>
             <link>https://docs.oracle.com/en/java/javase/11/docs/api/</link>
             <link>https://docs.spring.io/spring-batch/docs/current/api/</link>
