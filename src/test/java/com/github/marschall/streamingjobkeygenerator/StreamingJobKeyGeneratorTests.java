@@ -33,8 +33,8 @@ class StreamingJobKeyGeneratorTests {
         .toJobParameters();
 
     JobParameters order2 = new JobParametersBuilder()
-        .addString("key1", "value1")
         .addString("key2", "value2")
+        .addString("key1", "value1")
         .toJobParameters();
 
     JobParameters nonIdentifying = new JobParametersBuilder()
@@ -63,7 +63,44 @@ class StreamingJobKeyGeneratorTests {
         .addString("SMP", "\ud83d\ude08")
         .toJobParameters();
 
-    return List.of(empty, order1, order2, nonIdentifying, allTypes, nullValues, encodings);
+    JobParameters emptyStrings = new JobParametersBuilder()
+        .addString("", "")
+        .toJobParameters();
+
+    JobParameters edgeCases1 = new JobParametersBuilder()
+        .addString(stringOfLength(63), "string-length-63")
+        .toJobParameters();
+
+    JobParameters edgeCases2 = new JobParametersBuilder()
+        .addString(stringOfLength(64), "string-length-64")
+        .toJobParameters();
+
+    JobParameters edgeCases3 = new JobParametersBuilder()
+        .addString(stringOfLength(65), "string-length-65")
+        .toJobParameters();
+
+    JobParameters edgeCases4 = new JobParametersBuilder()
+        .addString(stringOfLength(63) + "\u00F6", "char-length-64-byte-length-65")
+        .toJobParameters();
+    
+    JobParameters edgeCases5 = new JobParametersBuilder()
+        .addString("\u00F6" + stringOfLength(63), "char-length-64-byte-length-65")
+        .toJobParameters();
+    
+    JobParameters malformed = new JobParametersBuilder()
+        .addString("\ude08", "malformed")
+        .toJobParameters();
+
+    return List.of(empty, order1, order2, nonIdentifying, allTypes, nullValues, encodings, emptyStrings,
+        edgeCases1, edgeCases2, edgeCases3, edgeCases4, edgeCases5, malformed);
+  }
+  
+  private static String stringOfLength(int length) {
+    StringBuilder buffer = new StringBuilder(length);
+    for (int i = 0; i < length; i++) {
+     buffer.append((char) ('0' + (i % 10))); 
+    }
+    return buffer.toString();
   }
 
   @ParameterizedTest

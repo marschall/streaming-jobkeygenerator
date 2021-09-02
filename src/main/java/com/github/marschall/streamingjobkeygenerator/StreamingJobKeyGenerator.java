@@ -1,5 +1,6 @@
 package com.github.marschall.streamingjobkeygenerator;
 
+import static java.nio.charset.CodingErrorAction.REPLACE;
 import static java.nio.charset.StandardCharsets.ISO_8859_1;
 
 import java.io.IOException;
@@ -70,7 +71,7 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
       hex[i * 2 + 1] = (byte) Character.forDigit(b & 0xF, 16);
 
     }
-    return new String(hex, ISO_8859_1);
+    return new String(hex, ISO_8859_1); // Strictly speaking US-ASCII but vectorized fast path is only available on JDK 17+
   }
 
   /**
@@ -89,7 +90,9 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
     IncrementalHasher() {
       this.charBuffer = CharBuffer.allocate(64);
       this.byteBuffer = ByteBuffer.allocate(64);
-      this.encoder = StandardCharsets.UTF_8.newEncoder();
+      this.encoder = StandardCharsets.UTF_8
+          .newEncoder()
+          .onMalformedInput(REPLACE);
       try {
         this.messageDigest = MessageDigest.getInstance("MD5");
       } catch (NoSuchAlgorithmException e) {
@@ -130,7 +133,7 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
         } else if (result == CoderResult.UNDERFLOW) {
           // underflow is signaled when
           // - input buffer has been completely consumed
-          // if the input buffer is not yet empty, that additional input is required
+          // - if the input buffer is not yet empty, that additional input is required
           if (end && this.charBuffer.hasRemaining()) {
             // the encoder expects input no more input is available
             result.throwException();
