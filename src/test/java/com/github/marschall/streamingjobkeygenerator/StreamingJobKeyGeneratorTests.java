@@ -41,14 +41,14 @@ class StreamingJobKeyGeneratorTests {
         .addString("identifying", "true")
         .addString("nonIdentifying", "false", false)
         .toJobParameters();
-    
+
     JobParameters allTypes = new JobParametersBuilder()
         .addString("string", "string")
         .addDate("date", new Date(1L))
         .addDouble("double", 1.0d)
         .addLong("long", 1L)
         .toJobParameters();
-    
+
     JobParameters nullValues = new JobParametersBuilder()
         .addString("string", null)
         .addDate("date", null)
@@ -56,7 +56,14 @@ class StreamingJobKeyGeneratorTests {
         .addLong("long", null)
         .toJobParameters();
 
-    return List.of(empty, order1, order2, nonIdentifying, allTypes, nullValues);
+    JobParameters encodings = new JobParametersBuilder()
+        .addString("ASCII", "ASCII")
+        .addString("ISO-8859-1", "\u00F6")
+        .addString("BMP", "\u010D")
+        .addString("SMP", "\ud83d\ude08")
+        .toJobParameters();
+
+    return List.of(empty, order1, order2, nonIdentifying, allTypes, nullValues, encodings);
   }
 
   @ParameterizedTest
