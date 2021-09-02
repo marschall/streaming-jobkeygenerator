@@ -2,6 +2,7 @@ package com.github.marschall.streamingjobkeygenerator;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
 
@@ -91,7 +92,7 @@ class StreamingJobKeyGeneratorTests {
         .addString("\ude08", "malformed")
         .toJobParameters();
 
-    return List.of(empty, order1, order2, nonIdentifying, allTypes, nullValues, encodings, emptyStrings,
+    return Arrays.asList(empty, order1, order2, nonIdentifying, allTypes, nullValues, encodings, emptyStrings,
         edgeCases1, edgeCases2, edgeCases3, edgeCases4, edgeCases5, malformed);
   }
   
