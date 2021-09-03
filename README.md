@@ -24,7 +24,7 @@ Implementation Notes
 
   - The code uses a `CharsetEncoder` to avoid creating a `OutputStreamWriter` instance to avoid creating a `byte[8192]` buffer.
 
-- The code avoids `BigInteger` and `String#format` for hex printing. Instead it implements a hex printer that reuses the existing `ByteBuffer` as a work buffer to avoid intermediate allocations.
+- The code avoids creating a `BigInteger` and using `String#format` for hex printing. Instead it implements a custom hex printer that reuses the existing `ByteBuffer` as a work buffer to avoid intermediate allocations.
 
 - The code runs noticeably faster in JDK 17 compared to JDK 11, so does `DefaultJobKeyGenerator` as well.
 
