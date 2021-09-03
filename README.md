@@ -10,15 +10,19 @@ See [marschall/jobkeygenerator-benchmarks](https://github.com/marschall/jobkeyge
 Implementation Notes
 --------------------
 
-- The code uses a small, limited size, `CharBuffer` to incrementally build the key and a small, limited size, `ByteBuffer` to hold the incremental input for the `MessageDigest`. A `CharsetEncoder` is used for the UTF-8 encoding from `CharBuffer` to the `ByteBuffer`.
+- The code uses a small, limited size, `CharBuffer` to incrementally build the key and a small, limited size, `ByteBuffer` to hold the incremental UTF-8 input for the `MessageDigest`. A `CharsetEncoder` is used for the UTF-8 encoding from the `CharBuffer` to the `ByteBuffer`.
+
+  The data flow looks like this:
 
       String -> CharBuffer -(CharsetEncoder)-> ByteBuffer -> MessageDigest
+      
+  The data flow looks like a lot of wasteful memory copies but the relative cost is quite low and decreasing in newer JDKs.
 
-- The code avoids the generating the full key as a `String` using a `StringBuilder` but instead uses a limited size `CharBuffer` work buffer to incrementally build the key.
+  - The code avoids generating the full key as a `String` using a `StringBuilder` but instead uses a limited size `CharBuffer` work buffer to incrementally build the key.
 
-- The code avoids converting the full key to UTF-8 into a single, potentially large, `byte[]` but instead uses a limited size `ByteBuffer` work buffer to incrementally build the hash input.
+  - The code avoids converting the full key to UTF-8 into a single, potentially large, `byte[]` but instead uses a limited size `ByteBuffer` work buffer to incrementally build the hash input.
 
-- The code uses a `CharsetEncoder` to avoid creating a `OutputStreamWriter` instance to avoid creating a `byte[8192]`buffer.
+  - The code uses a `CharsetEncoder` to avoid creating a `OutputStreamWriter` instance to avoid creating a `byte[8192]` buffer.
 
 - The code avoids `BigInteger` and `String#format` for hex printing. Instead it implements a hex printer that reuses the existing `ByteBuffer` as a work buffer to avoid intermediate allocations.
 
