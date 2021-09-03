@@ -13,6 +13,7 @@ import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -41,8 +42,9 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
 
     IncrementalHasher hasher = new IncrementalHasher();
     try {
-      List<String> keys = new ArrayList<>(props.keySet());
-      Collections.sort(keys);
+      // using String[] instead of ArrayList avoids one Object[] copy
+      String[] keys = props.keySet().toArray(new String[0]);
+      Arrays.sort(keys, String::compareTo);
       for (String key : keys) {
         JobParameter jobParameter = props.get(key);
         if(jobParameter.isIdentifying()) {
