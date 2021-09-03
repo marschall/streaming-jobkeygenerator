@@ -12,10 +12,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.DigestException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 import java.util.Map;
 
 import org.springframework.batch.core.DefaultJobKeyGenerator;
@@ -35,26 +32,32 @@ import org.springframework.util.Assert;
  */
 public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParameters> {
 
+  /**
+   * Job key for empty job parameters.
+   */
+  private static final String EMPTY_JOB_PARAMETERS_KEY = "d41d8cd98f00b204e9800998ecf8427e";
+
   @Override
   public String generateKey(JobParameters source) {
     Assert.notNull(source, "source must not be null");
+    if (source.isEmpty()) {
+      return EMPTY_JOB_PARAMETERS_KEY;
+    }
+    
     Map<String, JobParameter> props = source.getParameters();
 
     IncrementalHasher hasher = new IncrementalHasher();
     try {
-      // using String[] instead of ArrayList avoids one Object[] copy
-      String[] keys = props.keySet().toArray(new String[0]);
-      Arrays.sort(keys, String::compareTo);
-      for (String key : keys) {
-        JobParameter jobParameter = props.get(key);
-        if(jobParameter.isIdentifying()) {
-          hasher.put(key);
-          hasher.put('=');
-          Object value = jobParameter.getValue();
-          if (value != null) {
-            hasher.put(jobParameter.toString());
-          }
-          hasher.put(';');
+      if (props.size() == 1) {
+        hashParameter(props.keySet().iterator().next(), props, hasher);
+      } else {
+        // using String[] instead of ArrayList avoids one Object[] copy
+        // the new String[0] allocation should not show up
+        // https://shipilev.net/blog/2016/arrays-wisdom-ancients/
+        String[] keys = props.keySet().toArray(new String[0]);
+        Arrays.sort(keys, String::compareTo);
+        for (String key : keys) {
+          hashParameter(key, props, hasher);
         }
       }
       return hasher.digest();
@@ -62,6 +65,20 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
       throw new IllegalStateException("Failed to compute MD-5 hash", e);
     }
 
+  }
+
+  private void hashParameter(String key, Map<String, JobParameter> props, IncrementalHasher hasher)
+      throws IOException, DigestException {
+    JobParameter jobParameter = props.get(key);
+    if(jobParameter.isIdentifying()) {
+      hasher.put(key);
+      hasher.put('=');
+      Object value = jobParameter.getValue();
+      if (value != null) {
+        hasher.put(jobParameter.toString());
+      }
+      hasher.put(';');
+    }
   }
 
   /**
