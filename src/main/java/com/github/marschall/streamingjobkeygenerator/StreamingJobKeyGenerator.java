@@ -46,11 +46,12 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
 
     Map<String, JobParameter> props = source.getParameters();
 
-    IncrementalHasher hasher = new IncrementalHasher();
     try {
       if (props.size() == 1) {
-        hashParameter(props.keySet().iterator().next(), props, hasher);
+        String key = props.keySet().iterator().next();
+        return hashSingleParameter(key, props.get(key));
       } else {
+        IncrementalHasher hasher = new IncrementalHasher();
         // using String[] instead of ArrayList avoids one Object[] copy
         // the new String[0] allocation should not show up
         // https://shipilev.net/blog/2016/arrays-wisdom-ancients/
@@ -59,12 +60,29 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
         for (String key : keys) {
           hashParameter(key, props, hasher);
         }
+        return hasher.digest();
       }
-      return hasher.digest();
     } catch (IOException | DigestException e) {
       throw new IllegalStateException("Failed to compute MD-5 hash", e);
     }
 
+  }
+
+  private String hashSingleParameter(String key, JobParameter jobParameter) throws DigestException, IOException {
+    if (!jobParameter.isIdentifying()) {
+      return EMPTY_JOB_PARAMETERS_KEY;
+    }
+    Object value = jobParameter.getValue();
+    String stringValue = value != null ? value.toString() : null;
+    int inputLengthEstimate = key.length() + (stringValue != null ? stringValue.length() : 0) + 2;
+    IncrementalHasher hasher = new IncrementalHasher(inputLengthEstimate);
+    hasher.put(key);
+    hasher.put('=');
+    if (stringValue != null) {
+      hasher.put(stringValue);
+    }
+    hasher.put(';');
+    return hasher.digest();
   }
 
   private void hashParameter(String key, Map<String, JobParameter> props, IncrementalHasher hasher)
@@ -86,7 +104,12 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
    */
   static final class IncrementalHasher {
 
+    private static final int MAX_BUFFER_SIZE = 64;
+
     private static final int MD5_LENGTH = 16;
+
+    // MD5 hash plus MD5 hash in hex
+    private static final int MIN_BYTE_BUFFER_SIZE = MD5_LENGTH + MD5_LENGTH * 2;
 
     private final CharBuffer charBuffer;
 
@@ -96,9 +119,9 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
 
     private CharsetEncoder encoder;
 
-    IncrementalHasher() {
-      this.charBuffer = CharBuffer.allocate(64);
-      this.byteBuffer = ByteBuffer.allocate(64);
+    private IncrementalHasher(int charBufferSize, int bytBufferSize) {
+      this.charBuffer = CharBuffer.allocate(charBufferSize);
+      this.byteBuffer = ByteBuffer.allocate(bytBufferSize);
       this.encoder = StandardCharsets.UTF_8
           .newEncoder()
           .onMalformedInput(REPLACE);
@@ -107,6 +130,22 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
       } catch (NoSuchAlgorithmException e) {
         throw new IllegalStateException("MD5 algorithm not available.  Fatal (should be in the JDK).", e);
       }
+    }
+
+    IncrementalHasher() {
+      this(MAX_BUFFER_SIZE, MAX_BUFFER_SIZE);
+    }
+
+    IncrementalHasher(int inputLengthEstimate) {
+      this(calculateCharBufferSize(inputLengthEstimate), calculateByteBufferSize(inputLengthEstimate));
+    }
+
+    private static int calculateCharBufferSize(int inputLengthEstimate) {
+      return Math.min(inputLengthEstimate, MAX_BUFFER_SIZE);
+    }
+
+    private static int calculateByteBufferSize(int inputLengthEstimate) {
+      return Math.max(Math.min(inputLengthEstimate, MAX_BUFFER_SIZE), MIN_BYTE_BUFFER_SIZE);
     }
 
     void put(String s) throws IOException, DigestException {

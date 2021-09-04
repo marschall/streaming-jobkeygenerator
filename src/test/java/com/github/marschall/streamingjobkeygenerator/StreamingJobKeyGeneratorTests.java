@@ -27,6 +27,14 @@ class StreamingJobKeyGeneratorTests {
 
   static List<JobParameters> jobParameters() {
     JobParameters empty = new JobParameters();
+    
+    JobParameters oneParameter = new JobParametersBuilder()
+        .addString("key1", "value1")
+        .toJobParameters();
+    
+    JobParameters oneNonIdentifyingParameter = new JobParametersBuilder()
+        .addString("nonIdentifying", "false", false)
+        .toJobParameters();
 
     JobParameters order1 = new JobParametersBuilder()
         .addString("key1", "value1")
@@ -92,7 +100,8 @@ class StreamingJobKeyGeneratorTests {
         .addString("\ude08", "malformed")
         .toJobParameters();
 
-    return Arrays.asList(empty, order1, order2, nonIdentifying, allTypes, nullValues, encodings, emptyStrings,
+    return Arrays.asList(empty, oneParameter, oneNonIdentifyingParameter, order1, order2, nonIdentifying,
+        allTypes, nullValues, encodings, emptyStrings,
         edgeCases1, edgeCases2, edgeCases3, edgeCases4, edgeCases5, malformed);
   }
   
