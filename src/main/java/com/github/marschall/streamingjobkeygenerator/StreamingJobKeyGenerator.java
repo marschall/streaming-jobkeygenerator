@@ -43,7 +43,7 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
     if (source.isEmpty()) {
       return EMPTY_JOB_PARAMETERS_KEY;
     }
-    
+
     Map<String, JobParameter> props = source.getParameters();
 
     IncrementalHasher hasher = new IncrementalHasher();
@@ -85,7 +85,7 @@ public final class StreamingJobKeyGenerator implements JobKeyGenerator<JobParame
    * Performs incremental UTF-8 encoding and MD5 hashing.
    */
   static final class IncrementalHasher {
-    
+
     private static final int MD5_LENGTH = 16;
 
     private final CharBuffer charBuffer;
